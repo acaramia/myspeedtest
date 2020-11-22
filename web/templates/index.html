@@ -1,0 +1,80 @@
+<!doctype html>
+<html>
+<head>
+    <title>Speedtest.net sampling data</title>
+    <link rel="stylesheet" href='../static/style.css'/>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <style>
+	body {
+	    text-align: center;
+	}
+	#g1,
+	#g2 {
+	    width: 200px;
+	    height: 160px;
+	    display: inline-block;
+	    margin: 1em;
+	},
+	#g3 {
+	    width: 200px;
+	    height: 160px;
+	    display: inline-block;
+	    margin: 1em;
+	}
+   </style>
+</head>
+<body>
+    <h1>Speedtest.net sampling data</h1>
+    <div id="g1"></div>
+    <div id="g2"></div>
+    <div id="g3"></div>
+    <hr>
+	<h3> download: {{ download }} Mbit/s</h3>
+	<h3> upload: {{ upload }} Mbit/s</h3>
+    <h3> ping: {{ ping }} ms</h3>
+
+    <h3> Last Sensors Reading: {{ time }} ==> <a href="/"class="button">REFRESH</a></h3>
+	<hr>
+
+    <img src="/plot/downloads" alt="Image Placeholder" width="32%">
+	<img src="/plot/uploads" alt="Image Placeholder" width="32%">
+    <img src="/plot/pings" alt="Image Placeholder" width="32%">
+
+	<p> @2020 Amadeus</p>
+
+    <script src="../static/raphael.min.js"></script>
+    <script src="../static/justgage.js"></script>
+    <script>
+	var g1, g2, g3;
+	document.addEventListener("DOMContentLoaded", function(event) {
+        g1 = new JustGage({
+            id: "g1",
+            value: {{download}},
+            valueFontColor: "yellow",
+            min: 0,
+            max: 30,
+            title: "download Mbit/s",
+            label: "download Mbit/s"
+        });
+        g2 = new JustGage({
+            id: "g2",
+            value: {{upload}},
+            valueFontColor: "yellow",
+            min: 0,
+            max: 2,
+            title: "upload Mbit/s",
+            label: "upload Mbit/s"
+        });
+        g3 = new JustGage({
+            id: "g3",
+            value: {{ping}},
+            valueFontColor: "yellow",
+            min: 0,
+            max: 100,
+            title: "ping ms",
+            label: "ping ms"
+    	});
+    });
+    </script>
+</body>
+</html>

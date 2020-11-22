@@ -1,6 +1,7 @@
 import sqlite3
 from sqlite3 import Error
 from speedtst import speedtest_class as stc
+import time
 
 class mydb:
 
@@ -55,9 +56,14 @@ class mydb:
         fld = c.get_st_fields()
         d = self.dict_to_field_list(fld)
         f=','.join(d)
-        sql = f"CREATE TABLE IF NOT EXISTS log (id INTEGER PRIMARY KEY AUTOINCREMENT, {f})"
+        sql = f"CREATE TABLE IF NOT EXISTS log (id INTEGER PRIMARY KEY AUTOINCREMENT not null," \
+              f"sqltime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL," \
+              f" {f})"
         self.create_connection()
         self.conn.execute(sql)
+        sql =" delete from log where server_url = 'MOCK_DATA'"
+        self.conn.execute(sql)
+        self.conn.commit()
 
     def insert_log(self,row_dict):
         self.create_connection()
@@ -67,20 +73,80 @@ class mydb:
         fld = ','.join(fld)
         val_qm = ','.join(val_qm)
         sql = f"insert into log ({fld}) values ({val_qm})"
-        print(sql,val)
+        #print(sql,val)
         self.conn.execute(sql,val)
         self.conn.commit()
 
+    def getData(self):
+        #stcc = stc.speedtest_class()
+        #self.insert_log(stcc.get_data())
+        self.create_connection()
+        self.conn.row_factory = sqlite3.Row
+        curs = self.conn.cursor()
+        sql="SELECT * FROM log ORDER BY id DESC LIMIT 1"
+        curs.execute(sql)
+        rows = curs.fetchall()
+        rows = [dict(row) for row in rows]
+        #for row in rows:
+        #    time = str(row[0])
+        #    temp = row[1]
+        #    hum = row[2]
+        curs.close()
+        return rows
+
+    def getHistData(self,numSamples=None):
+        self.create_connection()
+        self.conn.row_factory = sqlite3.Row
+        curs = self.conn.cursor()
+        numSamples=10000
+        curs.execute("SELECT * FROM log ORDER BY sqltime DESC LIMIT " + str(numSamples))
+        data = curs.fetchall()
+        times=[]
+        downloads = []
+        uploads = []
+        pings = []
+        for row in reversed(data):
+            times.append(row['sqltime'])
+            downloads.append(row['download'])
+            uploads.append(row['upload'])
+            pings.append(row['ping'])
+        curs.close()
+        print(len(data))
+        return times,downloads,uploads,pings
+
     def select_log(self):
-        sql = "select * from log"
-        rows = self.conn.execute(sql)
+        sql = "select * from log limit 1"
+
+        # This is the important part, here we are setting row_factory property of
+        # connection object to sqlite3.Row(sqlite3.Row is an implementation of
+        # row_factory)
+        self.conn.row_factory = sqlite3.Row
+        c = self.conn.cursor()
+        c.execute(sql)
+        rows = c.fetchall()
+        rows = [dict(row) for row in rows]
         for row in rows:
-            print(row)
+            for fld in row:
+                print(fld,row[fld])
 
+    def main_loop(self):
+        self.create_connection()
+        self.create_log_table()
+        stcc = stc.speedtest_class()
+        sampleFreq = 3*60
+        while True:
+            self.insert_log(stcc.get_data(real=True))
+            time.sleep(sampleFreq)
 
-d = mydb()
-d.create_connection()
-d.create_log_table()
-stcc = stc.speedtest_class()
-d.insert_log(stcc.get_data())
-d.select_log()
+def test():
+    d = mydb()
+    d.create_connection()
+    d.create_log_table()
+    stcc = stc.speedtest_class()
+    d.insert_log(stcc.get_data())
+    d.select_log()
+
+if __name__ == '__main__':
+    #test()
+    d=mydb()
+    d.main_loop()
